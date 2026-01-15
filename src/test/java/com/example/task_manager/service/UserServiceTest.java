@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,6 +29,18 @@ public class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    private User createUser(Long id, String name, String email, String password, String role){
+        User user = new User();
+
+        user.setId(id);
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(password);
+        user.setRole(role);
+
+        return user;
+    }
 
     @Test
     public void testFindUserById_success(){
@@ -70,17 +83,56 @@ public class UserServiceTest {
         assertThrows(UserNotFoundException.class, () -> userService.findById(idUser));
     }
 
+    @Test
+    public void testFindAllUsers_nonEmptyList() {
+        // Préparation
+        User user = createUser(1L, "test", "test@example.com", "123456789", "ROLE_USER");
+        List<User> userList = List.of(user);
+
+        UserResponseDto expectedUserDto = new UserResponseDto(1L, "test", "test@example.com", "ROLE_USER");
+        List<UserResponseDto> expectedUserResponseDtoList = List.of(expectedUserDto);
+
+        // Simulation du comportement des mocks
+        when(userRepository.findAll()).thenReturn(userList);
+        when(userMapper.toResponseDto(user)).thenReturn(expectedUserDto);
+
+        // Exécution du test
+        List<UserResponseDto> actualUserResponseDtoList = userService.findAll();
+
+        // Vérifications
+        assertNotNull(actualUserResponseDtoList);
+        assertEquals(expectedUserResponseDtoList.size(), actualUserResponseDtoList.size());
+        assertEquals(expectedUserResponseDtoList.getFirst().name(), actualUserResponseDtoList.getFirst().name());
+        assertEquals(expectedUserResponseDtoList.getFirst().email(), actualUserResponseDtoList.getFirst().email());
+        assertEquals(expectedUserResponseDtoList.getFirst().role(), actualUserResponseDtoList.getFirst().role());
+
+        // Vérification des interactions avec les mocks
+        verify(userRepository).findAll();
+        verify(userMapper).toResponseDto(user);
+    }
+
+
+    @Test
+    public void testFindAllUsers_emptyList() {
+        // Préparation : une liste vide
+        List<User> userList = List.of();
+
+        // Simulation du comportement des mocks
+        when(userRepository.findAll()).thenReturn(userList);
+
+        // Exécution du test
+        List<UserResponseDto> actualUserResponseDtoList = userService.findAll();
+
+        // Vérifications
+        assertNotNull(actualUserResponseDtoList);
+        assertTrue(actualUserResponseDtoList.isEmpty(), "La liste retournée doit être vide");
+
+        // Vérification des interactions avec les mocks
+        verify(userRepository).findAll();
+    }
+
+
     /*@Test
-    public void testFindAllUsers_nonEmptyList(){
-
-    }
-
-    @Test
-    public void testFindAllUsers_emptyList(){
-
-    }
-
-    @Test
     public void testFindUserByEmail_success(){
 
     }
