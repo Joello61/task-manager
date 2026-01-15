@@ -19,13 +19,16 @@ public class GlobalExceptionHandler {
         return ApiResponseBuilder.error(ex.getMessage(), HttpStatus.NOT_FOUND, null);
     }
 
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<String>> handleTaskNotFoundException(TaskNotFoundException ex) {
+        return ApiResponseBuilder.error(ex.getMessage(), HttpStatus.NOT_FOUND, null);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
 
-        ex.getBindingResult().getFieldErrors().forEach(error -> {
-            errors.put(error.getField(), error.getDefaultMessage());
-        });
+        ex.getBindingResult().getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
 
         return ApiResponseBuilder.error("Validation failed", HttpStatus.BAD_REQUEST, errors);
     }
