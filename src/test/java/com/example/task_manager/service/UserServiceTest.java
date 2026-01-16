@@ -1,7 +1,9 @@
 package com.example.task_manager.service;
 
+import com.example.task_manager.dto.user.CreateUserDto;
 import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.entity.User;
+import com.example.task_manager.exception.UserAlreadyExistException;
 import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.mapper.UserMapper;
 import com.example.task_manager.repository.UserRepository;
@@ -164,12 +166,67 @@ public class UserServiceTest {
         verify(userMapper, never()).toResponseDto(any());
     }
 
-    /*@Test
+    @Test
     public void testSaveUser_success(){
+
+        // Préparation
+        CreateUserDto createUserDto = new CreateUserDto();
+
+        createUserDto.setName("test");
+        createUserDto.setPassword("123456789");
+        createUserDto.setRole("ROLE_USER");
+        createUserDto.setEmail("test@example.com");
+
+        Long idUser = 1L;
+        User user = createUser(idUser, createUserDto.getName(), createUserDto.getEmail(), createUserDto.getPassword(), createUserDto.getRole());
+
+        UserResponseDto expectedUser = new UserResponseDto(idUser, createUserDto.getName(), createUserDto.getEmail(), createUserDto.getRole());
+
+        // Simulation du comportement
+        when(userMapper.toEntity(createUserDto)).thenReturn(user);
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toResponseDto(user)).thenReturn(expectedUser);
+
+        // Exécution du test
+        UserResponseDto actualUser = userService.save(createUserDto);
+
+        // Vérifications
+        assertNotNull(actualUser);
+        assertEquals(expectedUser.name(), actualUser.name());
+        assertEquals(expectedUser.email(), actualUser.email());
+        assertEquals(idUser, actualUser.id());
+        verify(userMapper).toEntity(createUserDto);
+        verify(userMapper).toResponseDto(user);
+        verify(userRepository).save(user);
 
     }
 
     @Test
+    public void testSaveUser_FailButUserExist() {
+
+        // Préparation
+        CreateUserDto createUserDto = new CreateUserDto();
+
+        createUserDto.setName("test");
+        createUserDto.setPassword("123456789");
+        createUserDto.setRole("ROLE_USER");
+        createUserDto.setEmail("test@example.com");
+
+        Long idUser = 1L;
+        User user = createUser(idUser, createUserDto.getName(), createUserDto.getEmail(), createUserDto.getPassword(), createUserDto.getRole());
+
+        // Simulation du comportement
+        when(userRepository.findByEmail(createUserDto.getEmail())).thenReturn(Optional.of(user));
+
+        // Vérification
+        assertThrows(UserAlreadyExistException.class, () -> userService.save(createUserDto));
+        verify(userRepository).findByEmail(createUserDto.getEmail());
+        verify(userRepository, never()).save(user);
+        verify(userMapper, never()).toResponseDto(user);
+
+    }
+
+    /*@Test
     public void testUpdateUser_success(){
 
     }

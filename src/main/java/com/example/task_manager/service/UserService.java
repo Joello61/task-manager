@@ -3,6 +3,7 @@ package com.example.task_manager.service;
 import com.example.task_manager.dto.user.CreateUserDto;
 import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.entity.User;
+import com.example.task_manager.exception.UserAlreadyExistException;
 import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.mapper.UserMapper;
 import com.example.task_manager.repository.UserRepository;
@@ -22,7 +23,13 @@ public class UserService {
     }
 
     public UserResponseDto save(CreateUserDto userDto) {
+
+        userRepository.findByEmail(userDto.getEmail()).ifPresent(u -> {
+            throw new UserAlreadyExistException();
+        });
+
         User user = userMapper.toEntity(userDto);
+
         User userSave =  userRepository.save(user);
 
         return userMapper.toResponseDto(userSave);

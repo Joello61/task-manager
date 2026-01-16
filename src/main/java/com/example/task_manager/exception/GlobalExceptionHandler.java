@@ -33,4 +33,9 @@ public class GlobalExceptionHandler {
         return ApiResponseBuilder.error("Validation failed", HttpStatus.BAD_REQUEST, errors);
     }
 
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<String>> handleUserAlreadyExistException(UserAlreadyExistException ex) {
+        return ApiResponseBuilder.error(ex.getMessage(), HttpStatus.BAD_REQUEST, null);
+    }
+
 }
