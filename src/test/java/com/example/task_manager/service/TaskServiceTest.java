@@ -289,22 +289,96 @@ public class TaskServiceTest {
     }
 
 
-   /* @Test
-    public void testUpdateTask_success(){
+    @Test
+    public void testUpdateTask_success() {
+        // Préparation
+        Long taskId = 1L;
+        Long userId = 1L;
 
+        User existingUser = new User(userId, "oldName", "old@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
+        Task existingTask = createTask(taskId, "Old Title", "Old Description", false);
+
+        CreateTaskDto updateTaskDto = new CreateTaskDto();
+        updateTaskDto.setTitle("New Title");
+        updateTaskDto.setDescription("New Description");
+        updateTaskDto.setDone(true);
+        updateTaskDto.setUserId(userId);
+
+        TaskResponseDto expectedTask = new TaskResponseDto(taskId, "New Title", "New Description", true,
+                new UserResponseDto(userId, "oldName", "old@example.com", "ROLE_USER"));
+
+        // Simulation du comportement
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(taskRepository.save(existingTask)).thenReturn(existingTask);
+        when(taskMapper.toResponseDto(existingTask)).thenReturn(expectedTask);
+
+        // Exécution
+        TaskResponseDto actualTask = taskService.update(taskId, updateTaskDto);
+
+        // Vérifications
+        assertEquals("New Title", existingTask.getTitle());
+        assertEquals("New Description", existingTask.getDescription());
+        assertTrue(existingTask.isDone());
+        assertEquals(userId, existingTask.getUser().getId());
+
+        assertNotNull(actualTask);
+        assertEquals(expectedTask.title(), actualTask.title());
+        assertEquals(expectedTask.description(), actualTask.description());
+        assertTrue(actualTask.done());
+
+        verify(taskRepository).findById(taskId);
+        verify(userRepository).findById(userId);
+        verify(taskRepository).save(existingTask);
+        verify(taskMapper).toResponseDto(existingTask);
     }
 
     @Test
-    public void testUpdateTask_taskNotFound(){
+    public void testUpdateTask_taskNotFound() {
+        // Préparation
+        Long taskId = 99L;
+        CreateTaskDto updateTaskDto = new CreateTaskDto();
 
+        // Simulation du comportement
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
+
+        // Vérification
+        assertThrows(TaskNotFoundException.class, () -> taskService.update(taskId, updateTaskDto));
+
+        verify(taskRepository).findById(taskId);
+        verify(userRepository, never()).findById(any());
+        verify(taskRepository, never()).save(any());
+        verify(taskMapper, never()).toResponseDto(any());
     }
 
     @Test
-    public void testUpdateTask_newUserNotFound(){
+    public void testUpdateTask_newUserNotFound() {
+        // Préparation
+        Long taskId = 1L;
+        Long newUserId = 99L;
 
+        Task existingTask = createTask(taskId, "Old Title", "Old Description", false);
+        CreateTaskDto updateTaskDto = new CreateTaskDto();
+        updateTaskDto.setTitle("New Title");
+        updateTaskDto.setDescription("New Description");
+        updateTaskDto.setDone(true);
+        updateTaskDto.setUserId(newUserId);
+
+        // Simulation du comportement
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
+        when(userRepository.findById(newUserId)).thenReturn(Optional.empty());
+
+        // Vérification
+        assertThrows(UserNotFoundException.class, () -> taskService.update(taskId, updateTaskDto));
+
+        verify(taskRepository).findById(taskId);
+        verify(userRepository).findById(newUserId);
+        verify(taskRepository, never()).save(any());
+        verify(taskMapper, never()).toResponseDto(any());
     }
 
-    @Test
+
+    /*@Test
     public void testDeleteTask_success(){
 
     }
