@@ -6,13 +6,16 @@ import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.entity.ApiResponseBuilder;
 import com.example.task_manager.service.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController()
 @RequestMapping("/api/users")
+@Validated
 public class UserController {
 
     private final UserService userService;
@@ -28,7 +31,11 @@ public class UserController {
     }
 
     @GetMapping(value = "/{id}")
-    public ResponseEntity<ApiResponse<UserResponseDto>> getUserById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<UserResponseDto>> getUserById(
+            @PathVariable
+            @Min(value = 1, message = "L'id doit être supérieur à 0")
+            Long id
+    ) {
         return ApiResponseBuilder.success(userService.findById(id), "Utilisateur récupéré avec succès");
     }
 
@@ -38,7 +45,11 @@ public class UserController {
     }
 
     @DeleteMapping(value = "/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<String>> deleteUser(
+            @PathVariable
+            @Min(value = 1, message = "L'id doit être supérieur à 0")
+            Long id
+    ) {
         userService.delete(id);
         return ApiResponseBuilder.success(null, "Utilisateur supprimé avec succès");
     }
@@ -50,7 +61,12 @@ public class UserController {
     }
 
     @PatchMapping(value = "/update/{id}")
-    public ResponseEntity<ApiResponse<UserResponseDto>> updateUser(@Valid @RequestBody CreateUserDto userDto, @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<UserResponseDto>> updateUser(
+            @Valid @RequestBody CreateUserDto userDto,
+            @PathVariable
+            @Min(value = 1, message = "L'id doit être supérieur à 0")
+            Long id
+    ) {
         return ApiResponseBuilder.success(userService.update(id, userDto), "Utilisateur modifié avec succès");
     }
 }

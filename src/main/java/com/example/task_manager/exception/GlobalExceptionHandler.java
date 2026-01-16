@@ -2,6 +2,7 @@ package com.example.task_manager.exception;
 
 import com.example.task_manager.dto.ApiResponse;
 import com.example.task_manager.entity.ApiResponseBuilder;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -40,6 +41,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ApiResponse<String>> handleTaskAlreadyExistException(TaskAlreadyExistException ex) {
+        return ApiResponseBuilder.error(ex.getMessage(), HttpStatus.BAD_REQUEST, null);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<String>> handleConstraintViolationException(ConstraintViolationException ex) {
         return ApiResponseBuilder.error(ex.getMessage(), HttpStatus.BAD_REQUEST, null);
     }
 
