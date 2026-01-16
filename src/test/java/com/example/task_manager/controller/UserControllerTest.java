@@ -5,7 +5,6 @@ import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.exception.UserAlreadyExistException;
 import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.service.UserService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
