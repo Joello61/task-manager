@@ -226,17 +226,70 @@ public class UserServiceTest {
 
     }
 
-    /*@Test
+    @Test
     public void testUpdateUser_success(){
+
+        //Préparation
+
+        Long idUser = 1L;
+
+        User existingUser = createUser(
+                idUser,
+                "oldName",
+                "old@example.com",
+                "oldPassword",
+                "ROLE_USER"
+        );
+
+        CreateUserDto updateUserDto = new CreateUserDto();
+
+        updateUserDto.setName("test");
+        updateUserDto.setPassword("123456789");
+        updateUserDto.setRole("ROLE_ADMIN");
+        updateUserDto.setEmail("test@example.com");
+
+        UserResponseDto expectedUser = new UserResponseDto(idUser, updateUserDto.getName(), updateUserDto.getEmail(), updateUserDto.getRole());
+
+        //Simulation du comportement
+        when(userRepository.findById(idUser)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(existingUser)).thenReturn(existingUser);
+        when(userMapper.toResponseDto(existingUser)).thenReturn(expectedUser);
+
+        // Exécution du test
+        UserResponseDto actualUser = userService.update(idUser, updateUserDto);
+
+        // Vérication
+        assertEquals("test", existingUser.getName());
+        assertEquals("test@example.com", existingUser.getEmail());
+        assertEquals("ROLE_ADMIN", existingUser.getRole());
+
+        assertNotNull(actualUser);
+        assertEquals(expectedUser.name(), actualUser.name());
+        assertEquals(expectedUser.email(), actualUser.email());
+        assertEquals(idUser, actualUser.id());
+        verify(userRepository).findById(idUser);
+        verify(userRepository).save(existingUser);
+        verify(userMapper).toResponseDto(existingUser);
 
     }
 
     @Test
     public void testUpdateUser_userNotFound(){
 
+        //Préparation
+        Long idUser = 99L;
+
+        //Simulation du comportement
+        when(userRepository.findById(idUser)).thenReturn(Optional.empty());
+
+        //Vérification
+        assertThrows(UserNotFoundException.class, () -> userService.update(idUser, new CreateUserDto()));
+        verify(userRepository).findById(idUser);
+        verify(userRepository, never()).save(any());
+
     }
 
-    @Test
+    /*@Test
     public void testDeleteUser_success(){
 
     }
