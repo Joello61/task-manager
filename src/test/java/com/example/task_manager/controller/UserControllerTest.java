@@ -11,6 +11,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Mockito.when;
@@ -68,6 +70,45 @@ public class UserControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(false))
                 .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    public void testGetAllUsers_nonEmptyList () throws Exception {
+
+        List<UserResponseDto> userResponseDtoList = new ArrayList<>(List.of());
+
+        Long userId = 1L;
+        UserResponseDto userDto = new UserResponseDto(userId, "Alice", "alice@example.com", "ROLE_USER");
+
+        userResponseDtoList.add(userDto);
+
+        when(userService.findAll()).thenReturn(userResponseDtoList);
+
+        mockMvc.perform(get("/api/users/all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isNotEmpty())
+                .andExpect(jsonPath("$.data[0].name").value("Alice"))
+                .andExpect(jsonPath("$.data[0].email").value("alice@example.com"))
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    public void testGetAllUsers_emptyList () throws Exception {
+
+        List<UserResponseDto> userResponseDtoList = new ArrayList<>(List.of());
+
+        when(userService.findAll()).thenReturn(userResponseDtoList);
+
+        mockMvc.perform(get("/api/users/all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.code").value(200));
     }
 
 }
