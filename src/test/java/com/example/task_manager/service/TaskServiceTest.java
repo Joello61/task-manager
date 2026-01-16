@@ -378,14 +378,36 @@ public class TaskServiceTest {
     }
 
 
-    /*@Test
-    public void testDeleteTask_success(){
+    @Test
+    public void testDeleteTask_success() {
+        // Préparation
+        Long taskId = 1L;
 
+        // Simulation du comportement
+        when(taskRepository.existsById(taskId)).thenReturn(true);
+
+        // Exécution
+        taskService.delete(taskId);
+
+        // Vérification
+        verify(taskRepository).existsById(taskId);
+        verify(taskRepository).deleteById(taskId);
     }
 
     @Test
-    public void testDeleteTask_taskNotFound(){
+    public void testDeleteTask_taskNotFound() {
+        // Préparation
+        Long taskId = 99L;
 
-    }*/
+        // Simulation du comportement
+        when(taskRepository.existsById(taskId)).thenReturn(false);
+
+        // Vérification
+        assertThrows(TaskNotFoundException.class, () -> taskService.delete(taskId));
+
+        verify(taskRepository).existsById(taskId);
+        verify(taskRepository, never()).deleteById(any());
+    }
+
 
 }
