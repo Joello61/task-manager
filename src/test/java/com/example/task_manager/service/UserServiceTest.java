@@ -15,8 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -46,13 +45,7 @@ public class UserServiceTest {
     public void testFindUserById_success(){
         //préparation
         Long idUser = 1L;
-        User user = new User();
-
-        user.setId(idUser);
-        user.setName("test");
-        user.setPassword("123456789");
-        user.setEmail("test@example.com");
-        user.setRole("ROLE_USER");
+        User user = createUser(idUser, "test", "test@example.com", "123456789", "ROLE_USER");
 
         UserResponseDto expectedUser = new UserResponseDto(idUser, "test", "test@example.com", "ROLE_USER");
 
@@ -132,17 +125,46 @@ public class UserServiceTest {
     }
 
 
-    /*@Test
+    @Test
     public void testFindUserByEmail_success(){
+        //préparation
+        Long idUser = 1L;
+        User user = createUser(idUser, "test", "test@example.com", "123456789", "ROLE_USER");
 
+        UserResponseDto expectedUser = new UserResponseDto(idUser, "test", "test@example.com", "ROLE_USER");
+
+        //Simulation du comportement
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(userMapper.toResponseDto(user)).thenReturn(expectedUser);
+
+        //Exécution du test
+        UserResponseDto actualUser = userService.findByEmail("test@example.com");
+
+        //Vérification
+        assertNotNull(actualUser);
+        assertEquals("test", actualUser.name());
+        assertEquals("test@example.com", actualUser.email());
+        assertEquals("ROLE_USER", actualUser.role());
+
+        verify(userRepository).findByEmail("test@example.com");
+        verify(userMapper).toResponseDto(user);
     }
 
     @Test
     public void testFindUserByEmail_userNotFound(){
+        //preparation
+        String emailUser = "noemail@example.com";
 
+        //Simulation du comportement
+        when(userRepository.findByEmail(emailUser)).thenReturn(Optional.empty());
+
+        //Vérification
+        assertThrows(UserNotFoundException.class, () -> userService.findByEmail(emailUser));
+        verify(userRepository).findByEmail(emailUser);
+        verify(userMapper, never()).toResponseDto(any());
     }
 
-    @Test
+    /*@Test
     public void testSaveUser_success(){
 
     }
