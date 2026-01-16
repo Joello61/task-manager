@@ -38,4 +38,9 @@ public class GlobalExceptionHandler {
         return ApiResponseBuilder.error(ex.getMessage(), HttpStatus.BAD_REQUEST, null);
     }
 
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<String>> handleTaskAlreadyExistException(TaskAlreadyExistException ex) {
+        return ApiResponseBuilder.error(ex.getMessage(), HttpStatus.BAD_REQUEST, null);
+    }
+
 }

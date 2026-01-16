@@ -4,6 +4,7 @@ import com.example.task_manager.dto.task.CreateTaskDto;
 import com.example.task_manager.dto.task.TaskResponseDto;
 import com.example.task_manager.entity.Task;
 import com.example.task_manager.entity.User;
+import com.example.task_manager.exception.TaskAlreadyExistException;
 import com.example.task_manager.exception.TaskNotFoundException;
 import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.mapper.TaskMapper;
@@ -28,6 +29,10 @@ public class TaskService {
 
     public TaskResponseDto save(CreateTaskDto taskDto) {
         User user = userRepository.findById(taskDto.getUserId()).orElseThrow(() -> new UserNotFoundException(taskDto.getUserId()));
+
+        taskRepository.findByTitle(taskDto.getTitle()).ifPresent(t -> {
+            throw new TaskAlreadyExistException(taskDto.getTitle());
+        });
 
         Task task = taskMapper.toEntity(taskDto);
         task.setUser(user);
