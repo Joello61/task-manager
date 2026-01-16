@@ -185,6 +185,7 @@ public class UserServiceTest {
         // Simulation du comportement
         when(userMapper.toEntity(createUserDto)).thenReturn(user);
         when(userRepository.save(user)).thenReturn(user);
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(userMapper.toResponseDto(user)).thenReturn(expectedUser);
 
         // Exécution du test
@@ -289,14 +290,36 @@ public class UserServiceTest {
 
     }
 
-    /*@Test
+    @Test
     public void testDeleteUser_success(){
 
+        // Préparation
+        Long idUser = 1L;
+
+        // Simulation du comportement
+        when(userRepository.existsById(idUser)).thenReturn(true);
+        doNothing().when(userRepository).deleteById(idUser);
+
+        // Test
+        userService.delete(idUser);
+
+        // Vérification
+        verify(userRepository).deleteById(idUser);
     }
 
     @Test
     public void testDeleteUser_userNotFound(){
 
-    }*/
+        // Préparation
+        Long idUser = 1L;
+
+        // Simulation du comportement
+        when(userRepository.existsById(idUser)).thenReturn(false);
+
+        // Vérification
+        assertThrows(UserNotFoundException.class, () -> userService.delete(idUser));
+        verify(userRepository).existsById(idUser);
+        verify(userRepository, never()).deleteById(any());
+    }
 
 }
