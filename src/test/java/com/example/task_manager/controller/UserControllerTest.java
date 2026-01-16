@@ -1,8 +1,11 @@
 package com.example.task_manager.controller;
 
+import com.example.task_manager.dto.user.CreateUserDto;
 import com.example.task_manager.dto.user.UserResponseDto;
+import com.example.task_manager.exception.UserAlreadyExistException;
 import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -13,10 +16,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -109,6 +113,64 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    public void testCreateUser_success() throws Exception {
+
+        Long userId = 1L;
+        UserResponseDto userDto = new UserResponseDto(userId, "Alice", "alice@example.com", "ROLE_USER");
+
+        CreateUserDto createUserDto = new CreateUserDto();
+        createUserDto.setName("Alice");
+        createUserDto.setEmail("alice@example.com");
+        createUserDto.setPassword("123456789");
+        createUserDto.setRole("ROLE_USER");
+
+        when(userService.save(any(CreateUserDto.class))).thenReturn(userDto);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        mockMvc.perform(post("/api/users/create")
+                .contentType("application/json").content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.message").value("Utilisateur créé avec succès"))
+                .andExpect(jsonPath("$.data.name").value("Alice"))
+                .andExpect(jsonPath("$.data.email").value("alice@example.com"));
+    }
+
+    @Test
+    public void testCreateUser_invalidEmail() throws Exception {
+
+        CreateUserDto createUserDto = new CreateUserDto();
+        createUserDto.setName("Alice");
+        createUserDto.setEmail("alice");
+        createUserDto.setPassword("123456789");
+        createUserDto.setRole("ROLE_USER");
+
+        mockMvc.perform(post("/api/users/create")
+                .contentType("application/json").content(new ObjectMapper().writeValueAsString(createUserDto)))
+                .andExpect(status().isBadRequest());
+
+    }
+
+    @Test
+    public void testCreateUser_emailAlreadyExist() throws Exception {
+
+        CreateUserDto createUserDto = new CreateUserDto();
+        createUserDto.setName("Alice");
+        createUserDto.setEmail("alice@example.com");
+        createUserDto.setPassword("123456789");
+        createUserDto.setRole("ROLE_USER");
+
+        when(userService.save(any(CreateUserDto.class))).thenThrow(new UserAlreadyExistException());
+
+        mockMvc.perform(post("/api/users/create")
+                .contentType("application/json").content(new ObjectMapper().writeValueAsString(createUserDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists());
     }
 
 }
