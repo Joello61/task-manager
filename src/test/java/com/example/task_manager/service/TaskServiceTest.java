@@ -1,10 +1,13 @@
 package com.example.task_manager.service;
 
+import com.example.task_manager.dto.task.CreateTaskDto;
 import com.example.task_manager.dto.task.TaskResponseDto;
 import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.entity.Task;
 import com.example.task_manager.entity.User;
+import com.example.task_manager.exception.TaskAlreadyExistException;
 import com.example.task_manager.exception.TaskNotFoundException;
+import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.mapper.TaskMapper;
 import com.example.task_manager.repository.TaskRepository;
 import com.example.task_manager.repository.UserRepository;
@@ -197,22 +200,96 @@ public class TaskServiceTest {
     }
 
 
-    /*@Test
-    public void testSaveTask_success(){
+    @Test
+    public void testSaveTask_success() {
+        // Préparation
+        Long userId = 1L;
+        CreateTaskDto taskDto = new CreateTaskDto();
+        taskDto.setTitle("Task 1");
+        taskDto.setDescription("Description 1");
+        taskDto.setDone(false);
+        taskDto.setUserId(userId);
 
+        User user = new User(userId, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
+        Task task = createTask(1L, taskDto.getTitle(), taskDto.getDescription(), taskDto.isDone());
+
+        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole());
+        TaskResponseDto expectedTask = new TaskResponseDto(task.getId(), task.getTitle(), task.getDescription(), task.isDone(), userResponseDto);
+
+        // Simulation du comportement
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(taskRepository.findByTitle(taskDto.getTitle())).thenReturn(Optional.empty());
+        when(taskMapper.toEntity(taskDto)).thenReturn(task);
+        when(taskRepository.save(task)).thenReturn(task);
+        when(taskMapper.toResponseDto(task)).thenReturn(expectedTask);
+
+        // Exécution
+        TaskResponseDto actualTask = taskService.save(taskDto);
+
+        // Vérification
+        assertNotNull(actualTask);
+        assertEquals(expectedTask.title(), actualTask.title());
+        assertEquals(expectedTask.description(), actualTask.description());
+        assertFalse(actualTask.done());
+        assertEquals(userId, actualTask.user().id());
+
+        verify(userRepository).findById(userId);
+        verify(taskRepository).findByTitle(taskDto.getTitle());
+        verify(taskRepository).save(task);
+        verify(taskMapper).toEntity(taskDto);
+        verify(taskMapper).toResponseDto(task);
     }
 
     @Test
-    public void testSaveTask_FailButTaskExist(){
+    public void testSaveTask_FailButTaskExist() {
+        // Préparation
+        Long userId = 1L;
+        CreateTaskDto taskDto = new CreateTaskDto();
+        taskDto.setTitle("Task 1");
+        taskDto.setDescription("Description 1");
+        taskDto.setDone(false);
+        taskDto.setUserId(userId);
 
+        User user = new User(userId, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
+        Task existingTask = createTask(1L, taskDto.getTitle(), taskDto.getDescription(), taskDto.isDone());
+
+        // Simulation du comportement
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(taskRepository.findByTitle(taskDto.getTitle())).thenReturn(Optional.of(existingTask));
+
+        // Vérification
+        assertThrows(TaskAlreadyExistException.class, () -> taskService.save(taskDto));
+
+        verify(userRepository).findById(userId);
+        verify(taskRepository).findByTitle(taskDto.getTitle());
+        verify(taskMapper, never()).toEntity(any());
+        verify(taskRepository, never()).save(any());
     }
 
     @Test
-    public void testSaveTask_FailButUserNotFound(){
+    public void testSaveTask_FailButUserNotFound() {
+        // Préparation
+        Long userId = 99L;
+        CreateTaskDto taskDto = new CreateTaskDto();
+        taskDto.setTitle("Task 1");
+        taskDto.setDescription("Description 1");
+        taskDto.setDone(false);
+        taskDto.setUserId(userId);
 
+        // Simulation du comportement
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // Vérification
+        assertThrows(UserNotFoundException.class, () -> taskService.save(taskDto));
+
+        verify(userRepository).findById(userId);
+        verify(taskRepository, never()).findByTitle(any());
+        verify(taskMapper, never()).toEntity(any());
+        verify(taskRepository, never()).save(any());
     }
 
-    @Test
+
+   /* @Test
     public void testUpdateTask_success(){
 
     }
