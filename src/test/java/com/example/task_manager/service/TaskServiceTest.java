@@ -18,8 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class TaskServiceTest {
@@ -89,17 +88,57 @@ public class TaskServiceTest {
 
     }
 
+    @Test
+    public void testFindAllTasks_nonEmptyList() {
+        // Préparation
+        User user = new User(1L, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
+        Task task = createTask(1L, "Task 1", "Description 1", false);
+        List<Task> taskList = List.of(task);
+
+        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole());
+        TaskResponseDto expectedTask = new TaskResponseDto(task.getId(), task.getTitle(), task.getDescription(), task.isDone(), userResponseDto);
+
+        // Simulation du comportement
+        when(taskRepository.findAll()).thenReturn(taskList);
+        when(taskMapper.toResponseDto(task)).thenReturn(expectedTask);
+
+        // Exécution
+        List<TaskResponseDto> actualTasks = taskService.findAll();
+
+        // Vérification
+        assertNotNull(actualTasks);
+        assertEquals(1, actualTasks.size());
+        assertEquals("Task 1", actualTasks.getFirst().title());
+        assertEquals("Description 1", actualTasks.getFirst().description());
+        assertFalse(actualTasks.getFirst().done());
+        assertEquals("test@example.com", actualTasks.getFirst().user().email());
+
+        verify(taskRepository).findAll();
+        verify(taskMapper).toResponseDto(task);
+    }
+
+    @Test
+    public void testFindAllTasks_emptyList() {
+        // Préparation
+        List<Task> taskList = List.of();
+
+        // Simulation du comportement
+        when(taskRepository.findAll()).thenReturn(taskList);
+
+        // Exécution
+        List<TaskResponseDto> actualTasks = taskService.findAll();
+
+        // Vérification
+        assertNotNull(actualTasks);
+        assertTrue(actualTasks.isEmpty());
+
+        verify(taskRepository).findAll();
+        // taskMapper.toResponseDto ne doit jamais être appelé
+        verify(taskMapper, never()).toResponseDto(any());
+    }
+
+
     /*@Test
-    public void testFindAllTasks_nonEmptyList(){
-
-    }
-
-    @Test
-    public void testFindAllTasks_emptyList(){
-
-    }
-
-    @Test
     public void testFindTasksByUser_emptyList(){
 
     }
