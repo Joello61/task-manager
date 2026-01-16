@@ -7,6 +7,7 @@ import com.example.task_manager.entity.User;
 import com.example.task_manager.exception.TaskNotFoundException;
 import com.example.task_manager.mapper.TaskMapper;
 import com.example.task_manager.repository.TaskRepository;
+import com.example.task_manager.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,6 +29,9 @@ public class TaskServiceTest {
 
     @Mock
     private TaskRepository taskRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private TaskMapper taskMapper;
@@ -138,17 +142,62 @@ public class TaskServiceTest {
     }
 
 
+    @Test
+    public void testFindTasksByUser_emptyList() {
+        // Préparation
+        Long userId = 1L;
+        User user = new User(userId, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
+
+        // Simulation du comportement
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(taskRepository.findAllByUser(user)).thenReturn(List.of());
+
+        // Exécution
+        List<TaskResponseDto> actualTasks = taskService.findByUser(userId);
+
+        // Vérification
+        assertNotNull(actualTasks);
+        assertTrue(actualTasks.isEmpty());
+
+        verify(userRepository).findById(userId);
+        verify(taskRepository).findAllByUser(user);
+        verify(taskMapper, never()).toResponseDto(any());
+    }
+
+    @Test
+    public void testFindTasksByUser_nonEmptyList() {
+        // Préparation
+        Long userId = 1L;
+        User user = new User(userId, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
+        Task task = createTask(1L, "Task 1", "Description 1", false);
+        List<Task> taskList = List.of(task);
+
+        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole());
+        TaskResponseDto expectedTask = new TaskResponseDto(task.getId(), task.getTitle(), task.getDescription(), task.isDone(), userResponseDto);
+
+        // Simulation du comportement
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(taskRepository.findAllByUser(user)).thenReturn(taskList);
+        when(taskMapper.toResponseDto(task)).thenReturn(expectedTask);
+
+        // Exécution
+        List<TaskResponseDto> actualTasks = taskService.findByUser(userId);
+
+        // Vérification
+        assertNotNull(actualTasks);
+        assertEquals(1, actualTasks.size());
+        assertEquals("Task 1", actualTasks.getFirst().title());
+        assertEquals("Description 1", actualTasks.getFirst().description());
+        assertFalse(actualTasks.getFirst().done());
+        assertEquals("test@example.com", actualTasks.getFirst().user().email());
+
+        verify(userRepository).findById(userId);
+        verify(taskRepository).findAllByUser(user);
+        verify(taskMapper).toResponseDto(task);
+    }
+
+
     /*@Test
-    public void testFindTasksByUser_emptyList(){
-
-    }
-
-    @Test
-    public void testFindTasksByUser_nonEmptyList(){
-
-    }
-
-    @Test
     public void testSaveTask_success(){
 
     }
