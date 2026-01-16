@@ -5,12 +5,14 @@ import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.exception.UserAlreadyExistException;
 import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.service.UserService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -18,9 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -172,5 +176,32 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.status").value(false))
                 .andExpect(jsonPath("$.message").exists());
     }
+
+    @Test
+    public void testUpdateUser_success() throws Exception {
+
+        Long userId = 1L;
+
+        UserResponseDto userDto =
+                new UserResponseDto(userId, "Alice", "alice@example.com", "ROLE_USER");
+
+        CreateUserDto updateUserDto = new CreateUserDto();
+        updateUserDto.setName("Alice");
+        updateUserDto.setEmail("alice@example.com");
+        updateUserDto.setPassword("123456789");
+        updateUserDto.setRole("ROLE_USER");
+
+        when(userService.update(eq(userId), any(CreateUserDto.class)))
+                .thenReturn(userDto);
+
+        mockMvc.perform(patch("/api/users/update/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(updateUserDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.name").value("Alice"))
+                .andExpect(jsonPath("$.data.email").value("alice@example.com"));
+    }
+
 
 }
