@@ -36,6 +36,9 @@ public class UserControllerTest {
     @MockitoBean
     private UserService userService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Test
     public void testGetUserById_success() throws Exception {
         Long userId = 1L;
@@ -175,8 +178,6 @@ public class UserControllerTest {
 
         when(userService.save(any(CreateUserDto.class))).thenReturn(userDto);
 
-        ObjectMapper objectMapper = new ObjectMapper();
-
         mockMvc.perform(post("/api/users/create")
                 .contentType("application/json").content(objectMapper.writeValueAsString(createUserDto)))
                 .andExpect(status().isOk())
@@ -196,7 +197,7 @@ public class UserControllerTest {
         createUserDto.setRole("ROLE_USER");
 
         mockMvc.perform(post("/api/users/create")
-                .contentType("application/json").content(new ObjectMapper().writeValueAsString(createUserDto)))
+                .contentType("application/json").content(objectMapper.writeValueAsString(createUserDto)))
                 .andExpect(status().isBadRequest());
 
     }
@@ -212,7 +213,7 @@ public class UserControllerTest {
 
         mockMvc.perform(post("/api/users/create")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(false))
                 .andExpect(jsonPath("$.message").exists())
@@ -243,7 +244,7 @@ public class UserControllerTest {
         when(userService.save(any(CreateUserDto.class))).thenThrow(new UserAlreadyExistException());
 
         mockMvc.perform(post("/api/users/create")
-                .contentType("application/json").content(new ObjectMapper().writeValueAsString(createUserDto)))
+                .contentType("application/json").content(objectMapper.writeValueAsString(createUserDto)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(false))
                 .andExpect(jsonPath("$.message").exists());
@@ -268,7 +269,7 @@ public class UserControllerTest {
 
         mockMvc.perform(patch("/api/users/update/{id}", userId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(updateUserDto)))
+                        .content(objectMapper.writeValueAsString(updateUserDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(true))
                 .andExpect(jsonPath("$.data.name").value("Alice"))
@@ -288,7 +289,7 @@ public class UserControllerTest {
 
         mockMvc.perform(patch("/api/users/update/{id}", userId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(false))
                 .andExpect(jsonPath("$.message").exists())
@@ -311,7 +312,7 @@ public class UserControllerTest {
 
         mockMvc.perform(patch("/api/users/update/{id}", userId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(false))
                 .andExpect(jsonPath("$.message").exists())
