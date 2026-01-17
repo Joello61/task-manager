@@ -202,5 +202,25 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data.email").value("alice@example.com"));
     }
 
+    @Test
+    public void testUpdateUser_invalidId() throws Exception {
+
+        Long userId = -1L;
+
+        CreateUserDto dto = new CreateUserDto();
+        dto.setName("Alice");
+        dto.setEmail("alice@example.com");
+        dto.setPassword("123456789");
+        dto.setRole("ROLE_USER");
+
+        mockMvc.perform(patch("/api/users/update/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
 
 }
