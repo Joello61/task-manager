@@ -204,6 +204,36 @@ public class UserControllerTest {
     }
 
     @Test
+    public void testCreateUser_missingRequiredField() throws Exception {
+
+        CreateUserDto dto = new CreateUserDto();
+        dto.setName("Alice");
+        // email manquant
+        dto.setPassword("123456789");
+        dto.setRole("ROLE_USER");
+
+        mockMvc.perform(post("/api/users/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    public void testCreateUser_invalidPayload() throws Exception {
+
+        mockMvc.perform(post("/api/users/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
     public void testCreateUser_emailAlreadyExist() throws Exception {
 
         CreateUserDto createUserDto = new CreateUserDto();
