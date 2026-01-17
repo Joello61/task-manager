@@ -233,4 +233,35 @@ public class TaskControllerTest {
                 .andExpect(jsonPath("$.code", is(404)));
     }
 
+    @Test
+    void testDeleteTask_success() throws Exception {
+        doNothing().when(taskService).delete(1L);
+
+        mockMvc.perform(delete("/api/tasks/{id}", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is(true)))
+                .andExpect(jsonPath("$.message", containsString("supprimée")))
+                .andExpect(jsonPath("$.code", is(200)));
+    }
+
+    @Test
+    void testDeleteTask_taskNotFound() throws Exception {
+        doThrow(new TaskNotFoundException(99L)).when(taskService).delete(99L);
+
+        mockMvc.perform(delete("/api/tasks/{id}", 99L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status", is(false)))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code", is(404)));
+    }
+
+    @Test
+    void testDeleteTask_invalidId() throws Exception {
+        mockMvc.perform(delete("/api/tasks/{id}", -1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(false)))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code", is(400)));
+    }
+
 }
