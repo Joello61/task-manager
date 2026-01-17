@@ -6,7 +6,9 @@ import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.entity.ApiResponseBuilder;
 import com.example.task_manager.service.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -40,7 +42,14 @@ public class UserController {
     }
 
     @GetMapping(value = "/email/{email}")
-    public ResponseEntity<ApiResponse<UserResponseDto>> getUserByEmail(@PathVariable String email) {
+    public ResponseEntity<ApiResponse<UserResponseDto>> getUserByEmail(
+            @PathVariable
+            @NotBlank(message = "L'email ne doit pas être vide")
+            @Email(
+                    regexp = ".*@.*\\..*",
+                    message = "L'email doit être au format valide avec une extension (ex: .com)"
+            )
+            String email) {
         return ApiResponseBuilder.success(userService.findByEmail(email), "Utilisateur récupéré avec succès");
     }
 

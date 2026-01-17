@@ -80,6 +80,51 @@ public class UserControllerTest {
     }
 
     @Test
+    public void testGetUserByEmail_success() throws Exception {
+
+        String email = "alice@example.com";
+        UserResponseDto userDto =
+                new UserResponseDto(1L, "Alice", email, "ROLE_USER");
+
+        when(userService.findByEmail(email)).thenReturn(userDto);
+
+        mockMvc.perform(get("/api/users/email/{email}", email))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.data.email").value(email))
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    public void testGetUserByEmail_notFound() throws Exception {
+
+        String email = "unknown@example.com";
+
+        when(userService.findByEmail(email))
+                .thenThrow(new UserNotFoundException(email));
+
+        mockMvc.perform(get("/api/users/email/{email}", email))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(404));
+    }
+
+    @Test
+    public void testGetUserByEmail_invalidEmail() throws Exception {
+
+        String invalidEmail = "not-an-email";
+
+        mockMvc.perform(get("/api/users/email/{email}", invalidEmail))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+
+    @Test
     public void testGetAllUsers_nonEmptyList () throws Exception {
 
         List<UserResponseDto> userResponseDtoList = new ArrayList<>(List.of());
