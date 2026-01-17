@@ -8,7 +8,6 @@ import com.example.task_manager.exception.TaskNotFoundException;
 import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.service.TaskService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,20 +37,17 @@ public class TaskControllerTest {
     @MockitoBean
     private TaskService taskService;
 
-    private UserResponseDto userResponse;
-    private TaskResponseDto taskResponse;
-
-    @BeforeEach
-    void setUp() {
-        userResponse = new UserResponseDto(1L, "Joel", "joel@example.com", "ROLE_USER");
-        taskResponse = new TaskResponseDto(1L, "Apprendre le Testing", "Finir la semaine 4", false, userResponse);
-    }
 
     @Test
     void testCreateTask_success() throws Exception {
+        Long userId = 1L;
         CreateTaskDto dto = new CreateTaskDto();
         dto.setTitle("Titre Test");
-        dto.setUserId(1L);
+        dto.setDescription("Description Test");
+        dto.setUserId(userId);
+
+        UserResponseDto userResponse = new UserResponseDto(userId, "Joel", "joel@example.com", "ROLE_USER");
+        TaskResponseDto taskResponse = new TaskResponseDto(1L, "Titre Test", "Description Test", false, userResponse);
 
         when(taskService.save(any(CreateTaskDto.class))).thenReturn(taskResponse);
 
@@ -83,6 +79,7 @@ public class TaskControllerTest {
     void testCreateTask_userNotFound() throws Exception {
         CreateTaskDto dto = new CreateTaskDto();
         dto.setTitle("Titre");
+        dto.setDescription("Description");
         dto.setUserId(99L);
 
         when(taskService.save(any(CreateTaskDto.class))).thenThrow(new UserNotFoundException(99L));
@@ -115,6 +112,9 @@ public class TaskControllerTest {
 
     @Test
     void testGetTaskById_success() throws Exception {
+        UserResponseDto userResponse = new UserResponseDto(1L, "Joel", "joel@example.com", "ROLE_USER");
+        TaskResponseDto taskResponse = new TaskResponseDto(1L, "Titre Test", "Description Test", false, userResponse);
+
         when(taskService.findById(1L)).thenReturn(taskResponse);
 
         mockMvc.perform(get("/api/tasks/{id}", 1L))
