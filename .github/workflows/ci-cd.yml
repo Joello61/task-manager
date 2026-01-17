@@ -24,7 +24,7 @@ jobs:
             m2-${{ runner.os }}-
 
       - name: Run tests
-        run: mvn verify
+        run: mvn verify -Dspring.profiles.active=test
 
   checkstyle:
     name: Checkstyle
