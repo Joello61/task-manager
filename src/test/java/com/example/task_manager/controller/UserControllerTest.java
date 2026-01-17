@@ -297,5 +297,43 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(400));
     }
 
+    @Test
+    public void testUpdateUser_userNotFound() throws Exception {
+
+        Long userId = 99L;
+
+        CreateUserDto dto = new CreateUserDto();
+        dto.setName("Alice");
+        dto.setEmail("alice@example.com");
+        dto.setPassword("123456789");
+        dto.setRole("ROLE_USER");
+
+        when(userService.update(eq(userId), any(CreateUserDto.class)))
+                .thenThrow(new UserNotFoundException(userId));
+
+        mockMvc.perform(patch("/api/users/update/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(dto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(404));
+    }
+
+    @Test
+    public void testUpdateUser_invalidPayload() throws Exception {
+
+        Long userId = 1L;
+
+        mockMvc.perform(patch("/api/users/update/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+
 
 }
