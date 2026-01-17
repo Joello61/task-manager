@@ -20,13 +20,11 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 import static org.hamcrest.Matchers.is;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @ExtendWith(MockitoExtension.class)
 @WebMvcTest(UserController.class)
@@ -334,6 +332,45 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(400));
     }
 
+    @Test
+    public void testDeleteUser_success() throws Exception {
 
+        Long userId = 1L;
+
+        doNothing().when(userService).delete(userId);
+
+        mockMvc.perform(delete("/api/users/{id}", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    public void testDeleteUser_userNotFound() throws Exception {
+
+        Long userId = 99L;
+
+        doThrow(new UserNotFoundException(userId))
+                .when(userService).delete(userId);
+
+        mockMvc.perform(delete("/api/users/{id}", userId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(404));
+    }
+
+    @Test
+    public void testDeleteUser_invalidId() throws Exception {
+
+        Long userId = -1L;
+
+        mockMvc.perform(delete("/api/users/{id}", userId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code").value(400));
+    }
 
 }
