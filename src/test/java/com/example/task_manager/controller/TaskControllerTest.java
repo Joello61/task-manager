@@ -144,5 +144,93 @@ public class TaskControllerTest {
                 .andExpect(jsonPath("$.code", is(400)));
     }
 
+    @Test
+    void testUpdateTask_success() throws Exception {
+        Long userId = 1L;
+        CreateTaskDto updateDto = new CreateTaskDto();
+        updateDto.setTitle("Titre Update");
+        updateDto.setDescription("Desc");
+        updateDto.setUserId(userId);
+
+        UserResponseDto userResponse = new UserResponseDto(userId, "Joel", "joel@example.com", "ROLE_USER");
+        TaskResponseDto updatedTask = new TaskResponseDto(1L, "Titre Update", "Desc", true, userResponse);
+
+        when(taskService.update(eq(1L), any(CreateTaskDto.class))).thenReturn(updatedTask);
+
+        mockMvc.perform(patch("/api/tasks/update/{id}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is(true)))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.data.title", is("Titre Update")))
+                .andExpect(jsonPath("$.data.done", is(true)))
+                .andExpect(jsonPath("$.code", is(200)));
+    }
+
+    @Test
+    void testUpdateTask_invalidBody() throws Exception {
+        CreateTaskDto updateDto = new CreateTaskDto();
+
+        mockMvc.perform(patch("/api/tasks/update/{id}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(false)))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code", is(400)));
+    }
+
+    @Test
+    void testUpdateTask_invalidId() throws Exception {
+        CreateTaskDto updateDto = new CreateTaskDto();
+        updateDto.setTitle("Titre");
+        updateDto.setDescription("Desc");
+        updateDto.setUserId(1L);
+
+        mockMvc.perform(patch("/api/tasks/update/{id}", -1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(false)))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code", is(400)));
+    }
+
+    @Test
+    void testUpdateTask_taskNotFound() throws Exception {
+        CreateTaskDto updateDto = new CreateTaskDto();
+        updateDto.setTitle("Titre");
+        updateDto.setDescription("Desc");
+        updateDto.setUserId(1L);
+
+        when(taskService.update(eq(99L), any(CreateTaskDto.class))).thenThrow(new TaskNotFoundException(99L));
+
+        mockMvc.perform(patch("/api/tasks/update/{id}", 99L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status", is(false)))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code", is(404)));
+    }
+
+    @Test
+    void testUpdateTask_userNotFound() throws Exception {
+        CreateTaskDto updateDto = new CreateTaskDto();
+        updateDto.setTitle("Titre");
+        updateDto.setDescription("Desc");
+        updateDto.setUserId(99L);
+
+        when(taskService.update(eq(1L), any(CreateTaskDto.class))).thenThrow(new UserNotFoundException(99L));
+
+        mockMvc.perform(patch("/api/tasks/update/{id}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status", is(false)))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code", is(404)));
+    }
 
 }
