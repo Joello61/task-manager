@@ -1,0 +1,76 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  verify:
+    name: Maven Verify
+    runs-on: ubuntu-latest
+    container:
+      image: maven:3.9
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: m2-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            m2-${{ runner.os }}-
+
+      - name: Run tests
+        run: mvn verify
+
+  checkstyle:
+    name: Checkstyle
+    runs-on: ubuntu-latest
+    container:
+      image: maven:3.9
+    if: >
+      github.event_name == 'pull_request' &&
+      github.base_ref == 'dev'
+    steps:
+      - uses: actions/checkout@v4
+      - run: mvn checkstyle:check
+
+  client-validation:
+    name: Validation manuelle avant PROD
+    runs-on: ubuntu-latest
+    needs: verify
+    if: >
+      github.event_name == 'pull_request' &&
+      github.base_ref == 'main'
+    environment:
+      name: production
+    steps:
+      - name: Attente validation client
+        run: echo "VALIDATION MANUELLE AVANT PROD REQUISE"
+
+  deploy-preprod:
+    name: Deploy Preprod (simulation)
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+    steps:
+      - name: Simulated deploy preprod
+        run: |
+          echo "Deploying application to PREPROD..."
+          echo "Application successfully deployed (simulation)."
+
+  deploy-prod:
+    name: Deploy Prod (simulation)
+    runs-on: ubuntu-latest
+    needs: client-validation
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+    steps:
+      - name: Simulated deploy prod
+        run: |
+          echo "Deploying application to PROD..."
+          echo "Application successfully deployed (simulation)."
