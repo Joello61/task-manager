@@ -21,14 +21,17 @@ public class TaskService {
     private final UserRepository userRepository;
     private final TaskMapper taskMapper;
 
-    public TaskService(TaskRepository taskRepository, UserRepository userRepository, TaskMapper taskMapper) {
+    public TaskService(final TaskRepository taskRepository,
+                       final UserRepository userRepository,
+                       final TaskMapper taskMapper) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.taskMapper = taskMapper;
     }
 
-    public TaskResponseDto save(CreateTaskDto taskDto) {
-        User user = userRepository.findById(taskDto.getUserId()).orElseThrow(() -> new UserNotFoundException(taskDto.getUserId()));
+    public TaskResponseDto save(final CreateTaskDto taskDto) {
+        User user = userRepository.findById(taskDto.getUserId())
+                .orElseThrow(() -> new UserNotFoundException(taskDto.getUserId()));
 
         taskRepository.findByTitle(taskDto.getTitle()).ifPresent(t -> {
             throw new TaskAlreadyExistException(taskDto.getTitle());
@@ -45,18 +48,23 @@ public class TaskService {
         return taskRepository.findAll().stream().map(taskMapper::toResponseDto).toList();
     }
 
-    public TaskResponseDto findById(Long taskId) {
-        return taskRepository.findById(taskId).map(taskMapper::toResponseDto).orElseThrow(() -> new TaskNotFoundException(taskId));
+    public TaskResponseDto findById(final Long taskId) {
+        return taskRepository.findById(taskId).map(taskMapper::toResponseDto)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
     }
 
-    public List<TaskResponseDto> findByUser(Long idUser) {
-        User user = userRepository.findById(idUser).orElseThrow(() -> new UserNotFoundException(idUser));
-        return taskRepository.findAllByUser(user).stream().map(taskMapper::toResponseDto).toList();
+    public List<TaskResponseDto> findByUser(final Long idUser) {
+        User user = userRepository.findById(idUser)
+                .orElseThrow(() -> new UserNotFoundException(idUser));
+        return taskRepository.findAllByUser(user).stream()
+                .map(taskMapper::toResponseDto).toList();
     }
 
-    public TaskResponseDto update(Long taskId, CreateTaskDto taskDto) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
-        User user = userRepository.findById(taskDto.getUserId()).orElseThrow(() -> new UserNotFoundException(taskDto.getUserId()));
+    public TaskResponseDto update(final Long taskId, final CreateTaskDto taskDto) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
+        User user = userRepository.findById(taskDto.getUserId())
+                .orElseThrow(() -> new UserNotFoundException(taskDto.getUserId()));
 
         task.setTitle(taskDto.getTitle());
         task.setDescription(taskDto.getDescription());
@@ -67,7 +75,7 @@ public class TaskService {
         return taskMapper.toResponseDto(taskUpdated);
     }
 
-    public void delete(Long id) {
+    public void delete(final Long id) {
         if (!taskRepository.existsById(id)) {
             throw new TaskNotFoundException(id);
         }
