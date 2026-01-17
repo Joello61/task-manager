@@ -4,6 +4,7 @@ import com.example.task_manager.dto.task.CreateTaskDto;
 import com.example.task_manager.dto.task.TaskResponseDto;
 import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.exception.TaskAlreadyExistException;
+import com.example.task_manager.exception.TaskNotFoundException;
 import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.service.TaskService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -111,5 +112,37 @@ public class TaskControllerTest {
                 .andExpect(jsonPath("$.message").exists())
                 .andExpect(jsonPath("$.code", is(400)));
     }
+
+    @Test
+    void testGetTaskById_success() throws Exception {
+        when(taskService.findById(1L)).thenReturn(taskResponse);
+
+        mockMvc.perform(get("/api/tasks/{id}", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id", is(1)))
+                .andExpect(jsonPath("$.message", containsString("succès")))
+                .andExpect(jsonPath("$.code", is(200)));
+    }
+
+    @Test
+    void testGetTaskById_taskNotFound() throws Exception {
+        when(taskService.findById(99L)).thenThrow(new TaskNotFoundException(99L));
+
+        mockMvc.perform(get("/api/tasks/{id}", 99L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status", is(false)))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code", is(404)));
+    }
+
+    @Test
+    void testGetTaskById_invalidId() throws Exception {
+        mockMvc.perform(get("/api/tasks/{id}", -1L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(false)))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.code", is(400)));
+    }
+
 
 }
