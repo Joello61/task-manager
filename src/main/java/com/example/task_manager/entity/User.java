@@ -32,24 +32,30 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Role role = Role.USER;
 
     @Column(nullable = false)
     private Instant dateCreation;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean enabled = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean accountNonExpired = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean accountNonLocked = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean credentialsNonExpired = true;
 
     @OneToMany(mappedBy = "user")
+    @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 
     @PrePersist
