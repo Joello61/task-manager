@@ -1,5 +1,6 @@
 package com.example.task_manager.service;
 
+import com.example.task_manager.dto.auth.ChangePasswordDto;
 import com.example.task_manager.dto.auth.LoginDto;
 import com.example.task_manager.dto.auth.LoginResponseDto;
 import com.example.task_manager.dto.auth.RegisterDto;
@@ -11,9 +12,9 @@ import com.example.task_manager.mapper.UserMapper;
 import com.example.task_manager.repository.UserRepository;
 import com.example.task_manager.security.JwtUtil;
 import com.example.task_manager.security.UserDetailsImpl;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -74,5 +75,38 @@ public class AuthService {
                 userMapper.toResponseDto(userDetails.user());
 
         return new LoginResponseDto(userResponseDto, jwt);
+    }
+
+    public void changePassword(ChangePasswordDto changePasswordDto) {
+
+        User user = getUser();
+
+        if (!passwordEncoder.matches(changePasswordDto.getOldPassword(), user.getPassword())) {
+            throw new BadCredentialsException("L'ancien mot de passe est incorrect");
+        }
+
+        if (changePasswordDto.getOldPassword().equals(changePasswordDto.getNewPassword())) {
+            throw new IllegalArgumentException("Le nouveau mot de passe doit être différent de l'ancien");
+        }
+
+        if (!changePasswordDto.getNewPassword().equals(changePasswordDto.getConfirmPassword())) {
+            throw new IllegalArgumentException("Le nouveau mot de passe et la confirmation ne correspondent pas");
+        }
+
+        user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    private static User getUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        // 2. Vérifier si l'utilisateur est authentifié
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            throw new InsufficientAuthenticationException("Vous devez être connecté pour changer votre mot de passe");
+        }
+
+        // 3. Récupérer les détails de l'utilisateur
+        UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+        return userDetails.user();
     }
 }
