@@ -1,6 +1,5 @@
 package com.example.task_manager.dto.user;
 
-import com.example.task_manager.enumeration.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -9,18 +8,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class CreateUserDto {
+public class UpdateUserDto {
 
     @NotNull
     @Size(min = 3, max = 20)
     private String name;
-
-    @NotNull
-    @Size(min = 8, max = 20)
-    private String password;
-
-    @NotNull
-    private Role role;
 
     @NotNull
     @Email(regexp = ".*@.*\\..*", message = "L'email doit être au format valide avec une extension (ex: .com)")
