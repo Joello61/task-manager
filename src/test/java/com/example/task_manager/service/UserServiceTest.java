@@ -1,8 +1,10 @@
 package com.example.task_manager.service;
 
 import com.example.task_manager.dto.user.CreateUserDto;
+import com.example.task_manager.dto.user.UpdateUserDto;
 import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.entity.User;
+import com.example.task_manager.enumeration.Role;
 import com.example.task_manager.exception.UserAlreadyExistException;
 import com.example.task_manager.exception.UserNotFoundException;
 import com.example.task_manager.mapper.UserMapper;
@@ -13,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,25 +34,28 @@ public class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    private User createUser(Long id, String name, String email, String password, String role){
-        User user = new User();
-
-        user.setId(id);
-        user.setName(name);
-        user.setEmail(email);
-        user.setPassword(password);
-        user.setRole(role);
-
-        return user;
+    private User createTestUser(Long id, String name, String email, Role role) {
+        return User.builder()
+                .id(id)
+                .name(name)
+                .email(email)
+                .password("encoded_password") // Simulé
+                .role(role)
+                .dateCreation(Instant.now())
+                .enabled(true)
+                .accountNonExpired(true)
+                .accountNonLocked(true)
+                .credentialsNonExpired(true)
+                .build();
     }
 
     @Test
     public void testFindUserById_success(){
         //préparation
         Long idUser = 1L;
-        User user = createUser(idUser, "test", "test@example.com", "123456789", "ROLE_USER");
+        User user = createTestUser(idUser, "test", "test@example.com", Role.USER);
 
-        UserResponseDto expectedUser = new UserResponseDto(idUser, "test", "test@example.com", "ROLE_USER");
+        UserResponseDto expectedUser = new UserResponseDto(idUser, "test", "test@example.com", "USER");
 
         //Simulation du comportement
         when(userRepository.findById(idUser)).thenReturn(Optional.of(user));
@@ -62,7 +68,7 @@ public class UserServiceTest {
         assertNotNull(actualUser);
         assertEquals("test", actualUser.name());
         assertEquals("test@example.com", actualUser.email());
-        assertEquals("ROLE_USER", actualUser.role());
+        assertEquals("USER", actualUser.role());
         verify(userRepository).findById(idUser);
     }
 
@@ -81,10 +87,10 @@ public class UserServiceTest {
     @Test
     public void testFindAllUsers_nonEmptyList() {
         // Préparation
-        User user = createUser(1L, "test", "test@example.com", "123456789", "ROLE_USER");
+        User user = createTestUser(1L, "test", "test@example.com", Role.USER);
         List<User> userList = List.of(user);
 
-        UserResponseDto expectedUserDto = new UserResponseDto(1L, "test", "test@example.com", "ROLE_USER");
+        UserResponseDto expectedUserDto = new UserResponseDto(1L, "test", "test@example.com", "USER");
         List<UserResponseDto> expectedUserResponseDtoList = List.of(expectedUserDto);
 
         // Simulation du comportement des mocks
@@ -131,9 +137,9 @@ public class UserServiceTest {
     public void testFindUserByEmail_success(){
         //préparation
         Long idUser = 1L;
-        User user = createUser(idUser, "test", "test@example.com", "123456789", "ROLE_USER");
+        User user = createTestUser(idUser, "test", "test@example.com", Role.USER);
 
-        UserResponseDto expectedUser = new UserResponseDto(idUser, "test", "test@example.com", "ROLE_USER");
+        UserResponseDto expectedUser = new UserResponseDto(idUser, "test", "test@example.com", "USER");
 
         //Simulation du comportement
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
@@ -146,7 +152,7 @@ public class UserServiceTest {
         assertNotNull(actualUser);
         assertEquals("test", actualUser.name());
         assertEquals("test@example.com", actualUser.email());
-        assertEquals("ROLE_USER", actualUser.role());
+        assertEquals("USER", actualUser.role());
 
         verify(userRepository).findByEmail("test@example.com");
         verify(userMapper).toResponseDto(user);
@@ -174,13 +180,13 @@ public class UserServiceTest {
 
         createUserDto.setName("test");
         createUserDto.setPassword("123456789");
-        createUserDto.setRole("ROLE_USER");
+        createUserDto.setRole(Role.USER);
         createUserDto.setEmail("test@example.com");
 
         Long idUser = 1L;
-        User user = createUser(idUser, createUserDto.getName(), createUserDto.getEmail(), createUserDto.getPassword(), createUserDto.getRole());
+        User user = createTestUser(idUser, createUserDto.getName(), createUserDto.getEmail(), createUserDto.getRole());
 
-        UserResponseDto expectedUser = new UserResponseDto(idUser, createUserDto.getName(), createUserDto.getEmail(), createUserDto.getRole());
+        UserResponseDto expectedUser = new UserResponseDto(idUser, createUserDto.getName(), createUserDto.getEmail(), createUserDto.getRole().name());
 
         // Simulation du comportement
         when(userMapper.toEntity(createUserDto)).thenReturn(user);
@@ -210,11 +216,11 @@ public class UserServiceTest {
 
         createUserDto.setName("test");
         createUserDto.setPassword("123456789");
-        createUserDto.setRole("ROLE_USER");
+        createUserDto.setRole(Role.USER);
         createUserDto.setEmail("test@example.com");
 
         Long idUser = 1L;
-        User user = createUser(idUser, createUserDto.getName(), createUserDto.getEmail(), createUserDto.getPassword(), createUserDto.getRole());
+        User user = createTestUser(idUser, createUserDto.getName(), createUserDto.getEmail(), createUserDto.getRole());
 
         // Simulation du comportement
         when(userRepository.findByEmail(createUserDto.getEmail())).thenReturn(Optional.of(user));
@@ -231,25 +237,20 @@ public class UserServiceTest {
     public void testUpdateUser_success(){
 
         //Préparation
-
         Long idUser = 1L;
-
-        User existingUser = createUser(
+        User existingUser = createTestUser(
                 idUser,
                 "oldName",
                 "old@example.com",
-                "oldPassword",
-                "ROLE_USER"
+                Role.ADMIN
         );
 
-        CreateUserDto updateUserDto = new CreateUserDto();
+        UpdateUserDto updateUserDto = new UpdateUserDto();
 
         updateUserDto.setName("test");
-        updateUserDto.setPassword("123456789");
-        updateUserDto.setRole("ROLE_ADMIN");
         updateUserDto.setEmail("test@example.com");
 
-        UserResponseDto expectedUser = new UserResponseDto(idUser, updateUserDto.getName(), updateUserDto.getEmail(), updateUserDto.getRole());
+        UserResponseDto expectedUser = new UserResponseDto(idUser, updateUserDto.getName(), updateUserDto.getEmail(), "ADMIN");
 
         //Simulation du comportement
         when(userRepository.findById(idUser)).thenReturn(Optional.of(existingUser));
@@ -262,7 +263,7 @@ public class UserServiceTest {
         // Vérication
         assertEquals("test", existingUser.getName());
         assertEquals("test@example.com", existingUser.getEmail());
-        assertEquals("ROLE_ADMIN", existingUser.getRole());
+        assertEquals("ADMIN", existingUser.getRole().name());
 
         assertNotNull(actualUser);
         assertEquals(expectedUser.name(), actualUser.name());
@@ -284,7 +285,7 @@ public class UserServiceTest {
         when(userRepository.findById(idUser)).thenReturn(Optional.empty());
 
         //Vérification
-        assertThrows(UserNotFoundException.class, () -> userService.update(idUser, new CreateUserDto()));
+        assertThrows(UserNotFoundException.class, () -> userService.update(idUser, new UpdateUserDto()));
         verify(userRepository).findById(idUser);
         verify(userRepository, never()).save(any());
 

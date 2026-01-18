@@ -1,21 +1,34 @@
 package com.example.task_manager.controller;
 
+import com.example.task_manager.config.SecurityConfig;
 import com.example.task_manager.dto.task.CreateTaskDto;
 import com.example.task_manager.dto.task.TaskResponseDto;
 import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.exception.TaskAlreadyExistException;
 import com.example.task_manager.exception.TaskNotFoundException;
 import com.example.task_manager.exception.UserNotFoundException;
+import com.example.task_manager.security.JwtAuthenticationFilter;
+import com.example.task_manager.security.JwtUtil;
 import com.example.task_manager.service.TaskService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.io.IOException;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(MockitoExtension.class)
 @WebMvcTest(TaskController.class)
+@Import(SecurityConfig.class)
 public class TaskControllerTest {
 
     @Autowired
@@ -37,8 +51,30 @@ public class TaskControllerTest {
     @MockitoBean
     private TaskService taskService;
 
+    @MockitoBean
+    private JwtUtil jwtUtil; // On simule le composant manquant
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter; // On simule le filtre
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
+
+    @BeforeEach
+    void setUp() throws ServletException, IOException {
+        // INDISPENSABLE : On configure le filtre mocké pour qu'il laisse passer la requête
+        // sans quoi la requête n'atteint jamais le contrôleur et le body reste vide.
+        doAnswer(invocation -> {
+            HttpServletRequest request = invocation.getArgument(0);
+            HttpServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(request, response);
+            return null;
+        }).when(jwtAuthenticationFilter).doFilter(any(), any(), any());
+    }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testCreateTask_success() throws Exception {
         Long userId = 1L;
         CreateTaskDto dto = new CreateTaskDto();
@@ -46,7 +82,7 @@ public class TaskControllerTest {
         dto.setDescription("Description Test");
         dto.setUserId(userId);
 
-        UserResponseDto userResponse = new UserResponseDto(userId, "Joel", "joel@example.com", "ROLE_USER");
+        UserResponseDto userResponse = new UserResponseDto(userId, "Joel", "joel@example.com", "USER");
         TaskResponseDto taskResponse = new TaskResponseDto(1L, "Titre Test", "Description Test", false, userResponse);
 
         when(taskService.save(any(CreateTaskDto.class))).thenReturn(taskResponse);
@@ -63,6 +99,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testCreateTask_invalidBody() throws Exception {
         CreateTaskDto dto = new CreateTaskDto(); // Title manquant
 
@@ -76,6 +113,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testCreateTask_userNotFound() throws Exception {
         CreateTaskDto dto = new CreateTaskDto();
         dto.setTitle("Titre");
@@ -94,6 +132,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testCreateTask_taskAlreadyExist() throws Exception {
         CreateTaskDto dto = new CreateTaskDto();
         dto.setTitle("Titre Existant");
@@ -111,6 +150,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testGetTaskById_success() throws Exception {
         UserResponseDto userResponse = new UserResponseDto(1L, "Joel", "joel@example.com", "ROLE_USER");
         TaskResponseDto taskResponse = new TaskResponseDto(1L, "Titre Test", "Description Test", false, userResponse);
@@ -125,6 +165,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testGetTaskById_taskNotFound() throws Exception {
         when(taskService.findById(99L)).thenThrow(new TaskNotFoundException(99L));
 
@@ -136,6 +177,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testGetTaskById_invalidId() throws Exception {
         mockMvc.perform(get("/api/tasks/{id}", -1L))
                 .andExpect(status().isBadRequest())
@@ -145,6 +187,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testUpdateTask_success() throws Exception {
         Long userId = 1L;
         CreateTaskDto updateDto = new CreateTaskDto();
@@ -169,6 +212,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testUpdateTask_invalidBody() throws Exception {
         CreateTaskDto updateDto = new CreateTaskDto();
 
@@ -182,6 +226,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testUpdateTask_invalidId() throws Exception {
         CreateTaskDto updateDto = new CreateTaskDto();
         updateDto.setTitle("Titre");
@@ -198,6 +243,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testUpdateTask_taskNotFound() throws Exception {
         CreateTaskDto updateDto = new CreateTaskDto();
         updateDto.setTitle("Titre");
@@ -216,6 +262,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testUpdateTask_userNotFound() throws Exception {
         CreateTaskDto updateDto = new CreateTaskDto();
         updateDto.setTitle("Titre");
@@ -234,6 +281,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testDeleteTask_success() throws Exception {
         doNothing().when(taskService).delete(1L);
 
@@ -245,6 +293,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testDeleteTask_taskNotFound() throws Exception {
         doThrow(new TaskNotFoundException(99L)).when(taskService).delete(99L);
 
@@ -256,6 +305,7 @@ public class TaskControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testDeleteTask_invalidId() throws Exception {
         mockMvc.perform(delete("/api/tasks/{id}", -1L))
                 .andExpect(status().isBadRequest())

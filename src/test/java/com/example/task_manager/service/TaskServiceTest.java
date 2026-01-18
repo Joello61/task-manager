@@ -5,6 +5,7 @@ import com.example.task_manager.dto.task.TaskResponseDto;
 import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.entity.Task;
 import com.example.task_manager.entity.User;
+import com.example.task_manager.enumeration.Role;
 import com.example.task_manager.exception.TaskAlreadyExistException;
 import com.example.task_manager.exception.TaskNotFoundException;
 import com.example.task_manager.exception.UserNotFoundException;
@@ -39,17 +40,27 @@ public class TaskServiceTest {
     @Mock
     private TaskMapper taskMapper;
 
-    private Task createTask(Long id, String title, String description, boolean done){
+    private User createTestUser(Long id) {
+        return User.builder()
+                .id(id)
+                .name("test")
+                .email("test@example.com")
+                .password("encoded_password")
+                .role(Role.USER) // Utilisation de l'Enum Role
+                .dateCreation(Instant.now())
+                .enabled(true)
+                .build();
+    }
 
-        User user = new User(1L, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
-
-        Task task = new Task();
-        task.setId(id);
-        task.setTitle(title);
-        task.setDescription(description);
-        task.setDone(done);
-        task.setUser(user);
-        return task;
+    private Task createTestTask(Long id, String title, String description, boolean done, User user) {
+        return Task.builder()
+                .id(id)
+                .title(title)
+                .description(description)
+                .done(done)
+                .user(user)
+                .dateCreation(Instant.now())
+                .build();
     }
 
     @Test
@@ -57,8 +68,10 @@ public class TaskServiceTest {
 
         // Préparation
         Long idTask = 1L;
-        Task task = createTask(idTask, "test", "test", false);
-        UserResponseDto userResponseDtoTask = new UserResponseDto(1L, "test", "test@example.com", "ROLE_USER");
+        User user = createTestUser(1L);
+        Task task = createTestTask(idTask, "test", "test", false, user);
+
+        UserResponseDto userResponseDtoTask = new UserResponseDto(1L, "test", "test@example.com", "USER");
 
         TaskResponseDto expectedTask = new TaskResponseDto(idTask, "test", "test", false, userResponseDtoTask);
 
@@ -98,11 +111,12 @@ public class TaskServiceTest {
     @Test
     public void testFindAllTasks_nonEmptyList() {
         // Préparation
-        User user = new User(1L, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
-        Task task = createTask(1L, "Task 1", "Description 1", false);
+        Long userId = 1L;
+        User user = createTestUser(userId);
+        Task task = createTestTask(1L, "Task 1", "Description 1", false, user);
         List<Task> taskList = List.of(task);
 
-        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole());
+        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole().name());
         TaskResponseDto expectedTask = new TaskResponseDto(task.getId(), task.getTitle(), task.getDescription(), task.isDone(), userResponseDto);
 
         // Simulation du comportement
@@ -149,7 +163,7 @@ public class TaskServiceTest {
     public void testFindTasksByUser_emptyList() {
         // Préparation
         Long userId = 1L;
-        User user = new User(userId, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
+        User user = createTestUser(userId);
 
         // Simulation du comportement
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -171,11 +185,11 @@ public class TaskServiceTest {
     public void testFindTasksByUser_nonEmptyList() {
         // Préparation
         Long userId = 1L;
-        User user = new User(userId, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
-        Task task = createTask(1L, "Task 1", "Description 1", false);
+        User user = createTestUser(userId);
+        Task task = createTestTask(1L, "Task 1", "Description 1", false, user);
         List<Task> taskList = List.of(task);
 
-        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole());
+        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole().name());
         TaskResponseDto expectedTask = new TaskResponseDto(task.getId(), task.getTitle(), task.getDescription(), task.isDone(), userResponseDto);
 
         // Simulation du comportement
@@ -210,10 +224,10 @@ public class TaskServiceTest {
         taskDto.setDone(false);
         taskDto.setUserId(userId);
 
-        User user = new User(userId, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
-        Task task = createTask(1L, taskDto.getTitle(), taskDto.getDescription(), taskDto.isDone());
+        User user = createTestUser(userId);
+        Task task = createTestTask(1L, taskDto.getTitle(), taskDto.getDescription(), taskDto.isDone(), user);
 
-        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole());
+        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole().name());
         TaskResponseDto expectedTask = new TaskResponseDto(task.getId(), task.getTitle(), task.getDescription(), task.isDone(), userResponseDto);
 
         // Simulation du comportement
@@ -250,8 +264,8 @@ public class TaskServiceTest {
         taskDto.setDone(false);
         taskDto.setUserId(userId);
 
-        User user = new User(userId, "test", "test@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
-        Task existingTask = createTask(1L, taskDto.getTitle(), taskDto.getDescription(), taskDto.isDone());
+        User user = createTestUser(userId);
+        Task existingTask = createTestTask(1L, taskDto.getTitle(), taskDto.getDescription(), taskDto.isDone(), user);
 
         // Simulation du comportement
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -294,9 +308,8 @@ public class TaskServiceTest {
         // Préparation
         Long taskId = 1L;
         Long userId = 1L;
-
-        User existingUser = new User(userId, "oldName", "old@example.com", "123456789", "ROLE_USER", Instant.now(), List.of());
-        Task existingTask = createTask(taskId, "Old Title", "Old Description", false);
+        User user = createTestUser(userId);
+        Task existingTask = createTestTask(taskId, "Old", "Old", false, user);
 
         CreateTaskDto updateTaskDto = new CreateTaskDto();
         updateTaskDto.setTitle("New Title");
@@ -309,7 +322,7 @@ public class TaskServiceTest {
 
         // Simulation du comportement
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(taskRepository.save(existingTask)).thenReturn(existingTask);
         when(taskMapper.toResponseDto(existingTask)).thenReturn(expectedTask);
 
@@ -357,7 +370,7 @@ public class TaskServiceTest {
         Long taskId = 1L;
         Long newUserId = 99L;
 
-        Task existingTask = createTask(taskId, "Old Title", "Old Description", false);
+        Task existingTask = createTestTask(taskId, "Old Title", "Old Description", false, null);
         CreateTaskDto updateTaskDto = new CreateTaskDto();
         updateTaskDto.setTitle("New Title");
         updateTaskDto.setDescription("New Description");
