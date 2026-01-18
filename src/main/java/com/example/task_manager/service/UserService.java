@@ -1,6 +1,7 @@
 package com.example.task_manager.service;
 
 import com.example.task_manager.dto.user.CreateUserDto;
+import com.example.task_manager.dto.user.UpdateUserDto;
 import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.entity.User;
 import com.example.task_manager.exception.UserAlreadyExistException;
@@ -35,14 +36,12 @@ public class UserService {
         return userMapper.toResponseDto(userSave);
     }
 
-    public UserResponseDto update(Long idUser, CreateUserDto userDto) {
+    public UserResponseDto update(Long idUser, UpdateUserDto userDto) {
 
         User userFind = userRepository.findById(idUser).orElseThrow(() -> new UserNotFoundException(idUser));
 
         userFind.setName(userDto.getName());
-        userFind.setPassword(userDto.getPassword());
         userFind.setEmail(userDto.getEmail());
-        userFind.setRole(userDto.getRole());
 
         User userUpdated = userRepository.save(userFind);
         return userMapper.toResponseDto(userUpdated);
@@ -68,5 +67,4 @@ public class UserService {
         }
         userRepository.deleteById(id);
     }
-
 }

@@ -2,6 +2,7 @@ package com.example.task_manager.controller;
 
 import com.example.task_manager.dto.ApiResponse;
 import com.example.task_manager.dto.user.CreateUserDto;
+import com.example.task_manager.dto.user.UpdateUserDto;
 import com.example.task_manager.dto.user.UserResponseDto;
 import com.example.task_manager.entity.ApiResponseBuilder;
 import com.example.task_manager.service.UserService;
@@ -71,7 +72,7 @@ public class UserController {
 
     @PatchMapping(value = "/update/{id}")
     public ResponseEntity<ApiResponse<UserResponseDto>> updateUser(
-            @Valid @RequestBody CreateUserDto userDto,
+            @Valid @RequestBody UpdateUserDto userDto,
             @PathVariable
             @Min(value = 1, message = "L'id doit être supérieur à 0")
             Long id

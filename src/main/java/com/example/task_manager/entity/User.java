@@ -1,10 +1,8 @@
 package com.example.task_manager.entity;
 
+import com.example.task_manager.enumeration.Role;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -16,6 +14,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class User {
 
     @Id
@@ -31,13 +30,32 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role;
+    @Builder.Default
+    private Role role = Role.USER;
 
     @Column(nullable = false)
     private Instant dateCreation;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean enabled = true;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean accountNonExpired = true;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean accountNonLocked = true;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean credentialsNonExpired = true;
+
     @OneToMany(mappedBy = "user")
+    @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 
     @PrePersist

@@ -5,6 +5,10 @@ import com.example.task_manager.entity.ApiResponseBuilder;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -54,6 +58,42 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleConstraintViolationException(
             final ConstraintViolationException ex) {
         return ApiResponseBuilder.error(ex.getMessage(), HttpStatus.BAD_REQUEST, null);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponse<String>> handleBadCredentials() {
+        return ApiResponseBuilder.error(
+                "Email ou mot de passe incorrect",
+                HttpStatus.UNAUTHORIZED,
+                null
+        );
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ApiResponse<String>> handleAccoutLockedException() {
+        return ApiResponseBuilder.error(
+                "Compte de l'utilisateur bloqué. Veuillez contactez un administrateur.",
+                HttpStatus.UNAUTHORIZED,
+                null
+        );
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<String>> handleAuthenticationException() {
+        return ApiResponseBuilder.error(
+                "Erreur d'authentification",
+                HttpStatus.UNAUTHORIZED,
+                null
+        );
+    }
+
+    @ExceptionHandler(InsufficientAuthenticationException.class)
+    public ResponseEntity<ApiResponse<String>> handleInsufficientAuth() {
+        return ApiResponseBuilder.error(
+                "Authentification requise",
+                HttpStatus.UNAUTHORIZED,
+                null
+        );
     }
 
 }
