@@ -6,6 +6,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -81,6 +82,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleAuthenticationException() {
         return ApiResponseBuilder.error(
                 "Erreur d'authentification",
+                HttpStatus.UNAUTHORIZED,
+                null
+        );
+    }
+
+    @ExceptionHandler(InsufficientAuthenticationException.class)
+    public ResponseEntity<ApiResponse<String>> handleInsufficientAuth() {
+        return ApiResponseBuilder.error(
+                "Authentification requise",
                 HttpStatus.UNAUTHORIZED,
                 null
         );
