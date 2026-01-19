@@ -12,6 +12,8 @@ import com.example.task_manager.mapper.UserMapper;
 import com.example.task_manager.repository.UserRepository;
 import com.example.task_manager.security.JwtUtil;
 import com.example.task_manager.security.UserDetailsImpl;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class AuthService {
 
     private final UserService userService;
@@ -45,20 +48,22 @@ public class AuthService {
     }
 
     public void register(RegisterDto registerDto) {
-
+        log.info("Tentative d'inscription pour l'email: {}", registerDto.getEmail());
         User user = userRepository.findByEmail(registerDto.getEmail()).orElse(null);
         if (user != null) {
+            log.warn("Échec de l'inscription: l'utilisateur avec l'email {} existe déjà", registerDto.getEmail());
             throw new UserAlreadyExistException();
         }
 
         CreateUserDto createUserDto = userMapper.toCreateDto(registerDto);
         createUserDto.setPassword(passwordEncoder.encode(createUserDto.getPassword()));
         userService.save(createUserDto);
+        log.info("Utilisateur inscrit avec succès: {}", registerDto.getEmail());
 
     }
 
     public LoginResponseDto login(LoginDto loginDto) {
-
+        log.info("Tentative de connexion pour l'email: {}", loginDto.getEmail());
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginDto.getEmail(),
@@ -70,6 +75,7 @@ public class AuthService {
                 (UserDetailsImpl) authentication.getPrincipal();
 
         String jwt = jwtUtil.generateToken(userDetails.getUsername());
+        log.info("Connexion réussie pour l'utilisateur: {}", loginDto.getEmail());
 
         UserResponseDto userResponseDto =
                 userMapper.toResponseDto(userDetails.user());
@@ -77,11 +83,15 @@ public class AuthService {
         return new LoginResponseDto(userResponseDto, jwt);
     }
 
+    @PreAuthorize("isAuthenticated()")
     public void changePassword(ChangePasswordDto changePasswordDto) {
 
         User user = getUser();
+        log.info("Changement de mot de passe demandé pour l'utilisateur: {}", user.getEmail());
+
 
         if (!passwordEncoder.matches(changePasswordDto.getOldPassword(), user.getPassword())) {
+            log.warn("Échec du changement de mot de passe: ancien mot de passe incorrect pour {}", user.getEmail());
             throw new BadCredentialsException("L'ancien mot de passe est incorrect");
         }
 
@@ -95,6 +105,7 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
         userRepository.save(user);
+        log.info("Mot de passe mis à jour avec succès pour {}", user.getEmail());
     }
 
     private static User getUser() {
