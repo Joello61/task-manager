@@ -1,6 +1,7 @@
 package com.example.task_manager.controller;
 
 import com.example.task_manager.dto.ApiResponse;
+import com.example.task_manager.dto.PageResponse;
 import com.example.task_manager.dto.user.CreateUserDto;
 import com.example.task_manager.dto.user.UpdateUserDto;
 import com.example.task_manager.dto.user.UserResponseDto;
@@ -13,11 +14,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController()
 @RequestMapping("/api/users")
@@ -34,12 +37,24 @@ public class UserController {
 
     @GetMapping(value = "/all")
     @Operation(
-            summary = "Récupérer tous les utilisateurs",
-            description = "Retourne la liste complète de tous les utilisateurs enregistrés dans le système"
+            summary = "Récupérer les utilisateurs (paginés)",
+            description = "Retourne une page d’utilisateurs avec pagination et tri"
     )
-    public ResponseEntity<ApiResponse<List<UserResponseDto>>> getAllUsers() {
-        List<UserResponseDto> users = userService.findAll();
-        return ApiResponseBuilder.success(users, "Liste des utilisateurs récupérées");
+    public ResponseEntity<ApiResponse<PageResponse<UserResponseDto>>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "true") boolean ascending
+    ) {
+        Sort sort = Sort.by(ascending ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<UserResponseDto> pageResult = userService.findAll(pageable);
+
+        return ApiResponseBuilder.success(
+                PageResponse.from(pageResult),
+                "Liste des utilisateurs récupérée"
+        );
     }
 
     @GetMapping(value = "/{id}")
