@@ -91,30 +91,30 @@ public class UserServiceTest {
     @Test
     public void testFindAllUsers_nonEmptyList() {
         // Préparation
+        Pageable pageable = PageRequest.of(0, 5);
         User user = createTestUser(1L, "test", "test@example.com", Role.USER);
-        List<User> userList = List.of(user);
-        Page<User> userPage = new PageImpl<>(userList);
+        Page<User> userPage = new PageImpl<>(List.of(user));
 
         UserResponseDto expectedUserDto = new UserResponseDto(1L, "test", "test@example.com", "USER");
-        Page<UserResponseDto> expectedUserResponseDtoPage = new PageImpl<>(List.of(expectedUserDto));
 
-        // Simulation du comportement des mocks
-        Pageable pageable = PageRequest.of(0, 5);
-        when(userRepository.findAll()).thenReturn(userList);
+        // Simulation du comportement
+        when(userRepository.findAll(pageable)).thenReturn(userPage);
         when(userMapper.toResponseDto(user)).thenReturn(expectedUserDto);
 
         // Exécution du test
-        Page<UserResponseDto> actualUserPage = userService.findAll(pageable);;
+        Page<UserResponseDto> actualUserPage = userService.findAll(pageable);
 
-        // Vérifications
+        // Vérifications (Assertions)
         assertNotNull(actualUserPage);
         assertEquals(1, actualUserPage.getContent().size());
-        assertEquals(expectedUserDto.name(), actualUserPage.getContent().getFirst().name());
-        assertEquals(expectedUserDto.email(), actualUserPage.getContent().getFirst().email());
-        assertEquals(expectedUserDto.role(), actualUserPage.getContent().getFirst().role());
 
-        // Vérification des interactions avec les mocks
-        verify(userRepository).findAll();
+        UserResponseDto actualDto = actualUserPage.getContent().getFirst();
+        assertEquals(expectedUserDto.name(), actualDto.name());
+        assertEquals(expectedUserDto.email(), actualDto.email());
+        assertEquals(expectedUserDto.role(), actualDto.role());
+
+        // Vérification des interactions
+        verify(userRepository).findAll(pageable);
         verify(userMapper).toResponseDto(user);
     }
 
