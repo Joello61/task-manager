@@ -22,6 +22,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -29,7 +32,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -172,41 +174,57 @@ public class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     public void testGetAllUsers_nonEmptyList () throws Exception {
 
-        List<UserResponseDto> userResponseDtoList = new ArrayList<>(List.of());
-
         Long userId = 1L;
         UserResponseDto userDto = new UserResponseDto(userId, "Alice", "alice@example.com", "ROLE_USER");
 
-        userResponseDtoList.add(userDto);
+        // Simuler une page avec un seul utilisateur
+        Page<UserResponseDto> pageResult = new PageImpl<>(List.of(userDto));
 
-        when(userService.findAll()).thenReturn(userResponseDtoList);
+        when(userService.findAll(any(Pageable.class))).thenReturn(pageResult);
 
-        mockMvc.perform(get("/api/users/all"))
+        mockMvc.perform(get("/api/users/all")
+                        .param("page", "0")
+                        .param("size", "5")
+                        .param("sortBy", "id")
+                        .param("ascending", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(true))
                 .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data").isNotEmpty())
-                .andExpect(jsonPath("$.data[0].name").value("Alice"))
-                .andExpect(jsonPath("$.data[0].email").value("alice@example.com"))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content").isNotEmpty())
+                .andExpect(jsonPath("$.data.content[0].name").value("Alice"))
+                .andExpect(jsonPath("$.data.content[0].email").value("alice@example.com"))
+                .andExpect(jsonPath("$.data.content[0].role").value("ROLE_USER"))
                 .andExpect(jsonPath("$.code").value(200));
+
+        // Vérifier que le service a été appelé
+        verify(userService).findAll(any(Pageable.class));
     }
 
     @Test
     @WithMockUser(roles = "USER")
-    public void testGetAllUsers_emptyList () throws Exception {
+    public void testGetAllUsers_emptyPage() throws Exception {
 
-        List<UserResponseDto> userResponseDtoList = new ArrayList<>(List.of());
+        // Simuler une page vide
+        Page<UserResponseDto> emptyPage = new PageImpl<>(List.of());
 
-        when(userService.findAll()).thenReturn(userResponseDtoList);
+        // Simuler le service
+        when(userService.findAll(any(Pageable.class))).thenReturn(emptyPage);
 
-        mockMvc.perform(get("/api/users/all"))
+        mockMvc.perform(get("/api/users/all")
+                        .param("page", "0")
+                        .param("size", "5")
+                        .param("sortBy", "id")
+                        .param("ascending", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(true))
                 .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content").isEmpty())
                 .andExpect(jsonPath("$.code").value(200));
+
+        // Vérifier l’appel du service
+        verify(userService).findAll(any(Pageable.class));
     }
 
     @Test@WithMockUser(roles = "USER")
