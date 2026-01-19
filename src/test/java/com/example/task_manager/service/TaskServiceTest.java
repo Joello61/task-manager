@@ -195,36 +195,50 @@ public class TaskServiceTest {
     public void testFindTasksByUser_nonEmptyList() {
         // Préparation
         Long userId = 1L;
+        Pageable pageable = PageRequest.of(0, 5);
+
         User user = createTestUser(userId);
         Task task = createTestTask(1L, "Task 1", "Description 1", false, user);
-        List<Task> taskList = List.of(task);
         Page<Task> taskPage = new PageImpl<>(List.of(task));
 
-        UserResponseDto userResponseDto = new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole().name());
-        TaskResponseDto expectedTask = new TaskResponseDto(task.getId(), task.getTitle(), task.getDescription(), task.isDone(), userResponseDto);
+        UserResponseDto userResponseDto = new UserResponseDto(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole().name()
+        );
 
-        // Simulation du comportement
-        Pageable pageable = PageRequest.of(0, 5);
+        TaskResponseDto expectedTaskDto = new TaskResponseDto(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.isDone(),
+                userResponseDto
+        );
+
+        // Simulation
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(taskRepository.findAllByUser(user, pageable)).thenReturn(taskPage);
-        when(taskMapper.toResponseDto(task)).thenReturn(expectedTask);
+        when(taskMapper.toResponseDto(task)).thenReturn(expectedTaskDto);
 
         // Exécution
         Page<TaskResponseDto> actualTasks = taskService.findByUser(userId, pageable);
 
-        // Vérification
+        // 4. Vérifications
         assertNotNull(actualTasks);
         assertEquals(1, actualTasks.getContent().size());
-        assertEquals("Task 1", actualTasks.getContent().getFirst().title());
-        assertEquals("Description 1", actualTasks.getContent().getFirst().description());
-        assertFalse(actualTasks.getContent().getFirst().done());
-        assertEquals("test@example.com", actualTasks.getContent().getFirst().user().email());
 
+        TaskResponseDto actualDto = actualTasks.getContent().getFirst();
+        assertEquals("Task 1", actualDto.title());
+        assertEquals("Description 1", actualDto.description());
+        assertFalse(actualDto.done());
+        assertEquals("test@example.com", actualDto.user().email());
+
+        // Vérification
         verify(userRepository).findById(userId);
         verify(taskRepository).findAllByUser(user, pageable);
         verify(taskMapper).toResponseDto(task);
     }
-
 
     @Test
     public void testSaveTask_success() {
