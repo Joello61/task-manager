@@ -34,3 +34,6 @@ build/
 
 ### Intellij ###
 .idea/
+
+### Logs ###
+/logs

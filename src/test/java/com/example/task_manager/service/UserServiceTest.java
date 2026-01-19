@@ -14,6 +14,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.util.List;
@@ -89,23 +93,25 @@ public class UserServiceTest {
         // Préparation
         User user = createTestUser(1L, "test", "test@example.com", Role.USER);
         List<User> userList = List.of(user);
+        Page<User> userPage = new PageImpl<>(userList);
 
         UserResponseDto expectedUserDto = new UserResponseDto(1L, "test", "test@example.com", "USER");
-        List<UserResponseDto> expectedUserResponseDtoList = List.of(expectedUserDto);
+        Page<UserResponseDto> expectedUserResponseDtoPage = new PageImpl<>(List.of(expectedUserDto));
 
         // Simulation du comportement des mocks
+        Pageable pageable = PageRequest.of(0, 5);
         when(userRepository.findAll()).thenReturn(userList);
         when(userMapper.toResponseDto(user)).thenReturn(expectedUserDto);
 
         // Exécution du test
-        List<UserResponseDto> actualUserResponseDtoList = userService.findAll();
+        Page<UserResponseDto> actualUserPage = userService.findAll(pageable);;
 
         // Vérifications
-        assertNotNull(actualUserResponseDtoList);
-        assertEquals(expectedUserResponseDtoList.size(), actualUserResponseDtoList.size());
-        assertEquals(expectedUserResponseDtoList.getFirst().name(), actualUserResponseDtoList.getFirst().name());
-        assertEquals(expectedUserResponseDtoList.getFirst().email(), actualUserResponseDtoList.getFirst().email());
-        assertEquals(expectedUserResponseDtoList.getFirst().role(), actualUserResponseDtoList.getFirst().role());
+        assertNotNull(actualUserPage);
+        assertEquals(1, actualUserPage.getContent().size());
+        assertEquals(expectedUserDto.name(), actualUserPage.getContent().getFirst().name());
+        assertEquals(expectedUserDto.email(), actualUserPage.getContent().getFirst().email());
+        assertEquals(expectedUserDto.role(), actualUserPage.getContent().getFirst().role());
 
         // Vérification des interactions avec les mocks
         verify(userRepository).findAll();
@@ -117,19 +123,21 @@ public class UserServiceTest {
     public void testFindAllUsers_emptyList() {
         // Préparation : une liste vide
         List<User> userList = List.of();
+        Page<User> emptyUserPage = new PageImpl<>(userList);
 
         // Simulation du comportement des mocks
-        when(userRepository.findAll()).thenReturn(userList);
+        Pageable pageable = PageRequest.of(0, 5);
+        when(userRepository.findAll(pageable)).thenReturn(emptyUserPage);
 
         // Exécution du test
-        List<UserResponseDto> actualUserResponseDtoList = userService.findAll();
+        Page<UserResponseDto> actualUserPage = userService.findAll(pageable);
 
         // Vérifications
-        assertNotNull(actualUserResponseDtoList);
-        assertTrue(actualUserResponseDtoList.isEmpty(), "La liste retournée doit être vide");
+        assertNotNull(actualUserPage);
+        assertTrue(actualUserPage.isEmpty(), "La page retournée doit être vide");
 
         // Vérification des interactions avec les mocks
-        verify(userRepository).findAll();
+        verify(userRepository).findAll(pageable);
     }
 
 
